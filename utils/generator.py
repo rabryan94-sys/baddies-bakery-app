@@ -2,27 +2,19 @@
 Baddie's Bakery - Générateur de Contenu
 """
 
-import anthropic
 import streamlit as st
+import requests
 from utils.prompts import BRAND_IDENTITY, PROMPTS, PLATFORM_GUIDELINES
 
 
-def get_client():
+def generate_post(post_type: str, platform: str, **kwargs) -> str:
     try:
         api_key = st.secrets["ANTHROPIC_API_KEY"]
-        return anthropic.Anthropic(api_key=api_key)
     except KeyError:
-        st.error("❌ Clé API non trouvée ! Configure ton fichier secrets.")
-        return None
-
-
-def generate_post(post_type: str, platform: str, **kwargs) -> str:
-    client = get_client()
-    if client is None:
-        return "Erreur : Impossible de se connecter à l'API"
+        return "❌ Clé API non trouvée ! Configure tes secrets."
     
     if post_type not in PROMPTS:
-        return f"Erreur : Type de post '{post_type}' non reconnu"
+        return f"❌ Type de post '{post_type}' non reconnu"
     
     prompt_template = PROMPTS[post_type]
     platform_guidelines = PLATFORM_GUIDELINES.get(platform, "")
@@ -35,20 +27,35 @@ def generate_post(post_type: str, platform: str, **kwargs) -> str:
     )
     
     try:
-        message = client.messages.create(
-            model="claude-sonnet-4-20250514",
-            max_tokens=1024,
-            messages=[{"role": "user", "content": prompt}]
+        response = requests.post(
+            "https://api.anthropic.com/v1/messages",
+            headers={
+                "x-api-key": api_key,
+                "anthropic-version": "2023-06-01",
+                "content-type": "application/json"
+            },
+            json={
+                "model": "claude-sonnet-4-20250514",
+                "max_tokens": 1024,
+                "messages": [{"role": "user", "content": prompt}]
+            },
+            timeout=60
         )
-        return message.content[0].text
-    except anthropic.APIConnectionError:
-        return "❌ Erreur de connexion. Vérifie ta connexion internet."
-    except anthropic.RateLimitError:
-        return "❌ Limite d'appels API atteinte. Réessaie dans quelques minutes."
-    except anthropic.APIStatusError as e:
-        return f"❌ Erreur API : {e.message}"
+        
+        if response.status_code == 200:
+            data = response.json()
+            return data["content"][0]["text"]
+        elif response.status_code == 401:
+            return "❌ Clé API invalide. Vérifie ta clé."
+        elif response.status_code == 429:
+            return "❌ Limite d'appels atteinte. Réessaie plus tard."
+        else:
+            return f"❌ Erreur API : {response.status_code}"
+            
+    except requests.exceptions.Timeout:
+        return "❌ Timeout. Réessaie."
     except Exception as e:
-        return f"❌ Erreur inattendue : {str(e)}"
+        return f"❌ Erreur : {str(e)}"
 
 
 def generate_launch_post(platform: str, product_name: str, product_type: str, 
