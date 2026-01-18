@@ -1,11 +1,10 @@
 # Baddie's Bakery - Générateur de Posts
-# Dépendances Python
 
 # Interface web
 streamlit==1.40.0
 
 # API Anthropic (Claude)
-anthropic==0.39.0
+anthropic==0.34.0
 
 # Utilitaires
 python-dateutil==2.9.0
