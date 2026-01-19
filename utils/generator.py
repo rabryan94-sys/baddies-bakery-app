@@ -35,7 +35,7 @@ def generate_post(post_type: str, platform: str, **kwargs) -> str:
                 "content-type": "application/json"
             },
             json={
-                "model": "claude-3-5-sonnet-20241022",
+                "model": "claude-2.1",
                 "max_tokens": 1024,
                 "messages": [{"role": "user", "content": prompt}]
             },
