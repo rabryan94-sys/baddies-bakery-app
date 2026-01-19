@@ -7,14 +7,11 @@ import streamlit as st
 from utils.generator import (
     generate_launch_post, 
     generate_citation_post, 
-    generate_educational_post
+    generate_educational_post,
+    generate_video_script
 )
-from utils.prompts import CITATION_THEMES, EDUCATIONAL_TOPICS
+from utils.prompts import CITATION_THEMES, EDUCATIONAL_TOPICS, VIDEO_TYPES
 from utils.database import save_post
-
-# ═══════════════════════════════════════════════════════════════
-# CONFIGURATION DE LA PAGE
-# ═══════════════════════════════════════════════════════════════
 
 st.set_page_config(
     page_title="Baddie's Bakery - Générateur de Posts",
@@ -22,10 +19,6 @@ st.set_page_config(
     layout="centered",
     initial_sidebar_state="expanded"
 )
-
-# ═══════════════════════════════════════════════════════════════
-# STYLES CSS PERSONNALISÉS
-# ═══════════════════════════════════════════════════════════════
 
 st.markdown("""
 <style>
@@ -70,10 +63,6 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# ═══════════════════════════════════════════════════════════════
-# HEADER
-# ═══════════════════════════════════════════════════════════════
-
 st.markdown("""
 <div class="main-header">
     <h1>🧁 Baddie's Bakery</h1>
@@ -81,15 +70,11 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# ═══════════════════════════════════════════════════════════════
-# SIDEBAR
-# ═══════════════════════════════════════════════════════════════
-
 with st.sidebar:
-    st.markdown("### 🎯 Type de post")
+    st.markdown("### 🎯 Type de contenu")
     post_type = st.radio(
         "Que veux-tu créer ?",
-        options=["🚀 Lancement produit", "💖 Citation inspirante", "📚 Post éducatif"],
+        options=["🚀 Lancement produit", "💖 Citation inspirante", "📚 Post éducatif", "🎬 Script vidéo"],
         label_visibility="collapsed"
     )
     st.markdown("---")
@@ -104,10 +89,6 @@ with st.sidebar:
     from utils.database import get_stats
     stats = get_stats()
     st.metric("Posts générés", stats["total"])
-
-# ═══════════════════════════════════════════════════════════════
-# FORMULAIRES
-# ═══════════════════════════════════════════════════════════════
 
 st.markdown(f"### {post_type}")
 
@@ -133,6 +114,7 @@ if "Lancement" in post_type:
                 with st.spinner("Création de ton post magique... 🧁"):
                     content = generate_launch_post(platform=platform, product_name=product_name, product_type=product_type, scent=scent, ingredients=ingredients or "Ingrédients naturels", benefits=benefits or "Peau douce et parfumée")
                     st.session_state.generated_content = content
+                    st.session_state.post_type_key = "lancement"
                     st.session_state.post_metadata = {"product_name": product_name, "product_type": product_type, "scent": scent}
 
 # CITATION INSPIRANTE
@@ -146,6 +128,7 @@ elif "Citation" in post_type:
             with st.spinner("Création de ton post inspirant... 💖"):
                 content = generate_citation_post(platform=platform, theme=final_theme)
                 st.session_state.generated_content = content
+                st.session_state.post_type_key = "citation"
                 st.session_state.post_metadata = {"theme": final_theme}
 
 # POST ÉDUCATIF
@@ -159,15 +142,29 @@ elif "éducatif" in post_type:
             with st.spinner("Création de ton post éducatif... 📚"):
                 content = generate_educational_post(platform=platform, topic=final_topic)
                 st.session_state.generated_content = content
+                st.session_state.post_type_key = "educatif"
                 st.session_state.post_metadata = {"topic": final_topic}
 
-# ═══════════════════════════════════════════════════════════════
-# AFFICHAGE DU RÉSULTAT
-# ═══════════════════════════════════════════════════════════════
+# SCRIPT VIDÉO
+elif "Script" in post_type:
+    with st.form("video_form"):
+        video_type = st.selectbox("Type de vidéo", options=VIDEO_TYPES)
+        subject = st.text_area("Sujet de la vidéo", placeholder="Ex: Présentation de notre nouvelle crème Girl Boss à la cerise", height=100)
+        submitted = st.form_submit_button("🎬 Générer le script", use_container_width=True)
+        if submitted:
+            if not subject:
+                st.error("Décris le sujet de ta vidéo !")
+            else:
+                with st.spinner("Création de ton script vidéo... 🎬"):
+                    content = generate_video_script(platform=platform, video_type=video_type, subject=subject)
+                    st.session_state.generated_content = content
+                    st.session_state.post_type_key = "script_video"
+                    st.session_state.post_metadata = {"video_type": video_type, "subject": subject}
 
+# AFFICHAGE DU RÉSULTAT
 if st.session_state.generated_content:
     st.markdown("---")
-    st.markdown("### 📝 Ton post est prêt !")
+    st.markdown("### 📝 Ton contenu est prêt !")
     st.markdown(f'<span class="platform-badge">{platform}</span>', unsafe_allow_html=True)
     st.markdown('<div class="result-card">', unsafe_allow_html=True)
     st.markdown(st.session_state.generated_content)
@@ -184,14 +181,13 @@ if st.session_state.generated_content:
             st.rerun()
     with col3:
         if st.button("💾 Sauvegarder", use_container_width=True):
-            if "Lancement" in post_type:
-                type_key = "lancement"
-            elif "Citation" in post_type:
-                type_key = "citation"
-            else:
-                type_key = "educatif"
-            post_id = save_post(content=st.session_state.generated_content, post_type=type_key, platform=platform, metadata=st.session_state.get("post_metadata", {}))
-            st.success(f"✅ Post sauvegardé ! (ID: {post_id})")
+            post_id = save_post(
+                content=st.session_state.generated_content, 
+                post_type=st.session_state.get("post_type_key", "post"), 
+                platform=platform, 
+                metadata=st.session_state.get("post_metadata", {})
+            )
+            st.success(f"✅ Sauvegardé ! (ID: {post_id})")
 
 st.markdown("---")
 st.markdown("<p style='text-align: center; color: #999;'>Made with 💖 for Baddie's Bakery</p>", unsafe_allow_html=True)
