@@ -7,14 +7,16 @@ from utils.prompts import (
     PROMPTS, 
     PLATFORM_GUIDELINES,
     CITATION_THEMES,
-    EDUCATIONAL_TOPICS
+    EDUCATIONAL_TOPICS,
+    VIDEO_TYPES
 )
 
 from utils.generator import (
     generate_post,
     generate_launch_post,
     generate_citation_post,
-    generate_educational_post
+    generate_educational_post,
+    generate_video_script
 )
 
 from utils.database import (
