@@ -80,3 +80,13 @@ def generate_educational_post(platform: str, topic: str) -> str:
         platform=platform,
         topic=topic
     )
+
+
+def generate_video_script(platform: str, video_type: str, subject: str) -> str:
+    return generate_post(
+        post_type="script_video",
+        platform=platform,
+        video_type=video_type,
+        subject=subject
+    )
+        post_
