@@ -35,7 +35,7 @@ def generate_post(post_type: str, platform: str, **kwargs) -> str:
                 "content-type": "application/json"
             },
             json={
-                "model": "claude-3-sonnet-20240229",
+                "model": "claude-3-5-sonnet-latest",
                 "max_tokens": 1024,
                 "messages": [{"role": "user", "content": prompt}]
             },
@@ -45,15 +45,10 @@ def generate_post(post_type: str, platform: str, **kwargs) -> str:
         if response.status_code == 200:
             data = response.json()
             return data["content"][0]["text"]
-        elif response.status_code == 401:
-            return "❌ Clé API invalide. Vérifie ta clé."
-        elif response.status_code == 429:
-            return "❌ Limite d'appels atteinte. Réessaie plus tard."
         else:
-            return f"❌ Erreur API : {response.status_code}"
+            error_detail = response.text
+            return f"❌ Erreur API {response.status_code}: {error_detail}"
             
-    except requests.exceptions.Timeout:
-        return "❌ Timeout. Réessaie."
     except Exception as e:
         return f"❌ Erreur : {str(e)}"
 
