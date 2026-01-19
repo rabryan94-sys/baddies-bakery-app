@@ -1,20 +1,16 @@
-"""
-Baddie's Bakery - Générateur de Contenu
-"""
-
 import streamlit as st
 import requests
 from utils.prompts import BRAND_IDENTITY, PROMPTS, PLATFORM_GUIDELINES
 
 
-def generate_post(post_type: str, platform: str, **kwargs) -> str:
+def generate_post(post_type, platform, **kwargs):
     try:
         api_key = st.secrets["ANTHROPIC_API_KEY"]
     except KeyError:
-        return "❌ Clé API non trouvée ! Configure tes secrets."
+        return "Cle API non trouvee"
     
     if post_type not in PROMPTS:
-        return f"❌ Type de post '{post_type}' non reconnu"
+        return "Type de post non reconnu"
     
     prompt_template = PROMPTS[post_type]
     platform_guidelines = PLATFORM_GUIDELINES.get(platform, "")
@@ -46,15 +42,13 @@ def generate_post(post_type: str, platform: str, **kwargs) -> str:
             data = response.json()
             return data["content"][0]["text"]
         else:
-            error_detail = response.text
-            return f"❌ Erreur API {response.status_code}: {error_detail}"
+            return "Erreur API " + str(response.status_code)
             
     except Exception as e:
-        return f"❌ Erreur : {str(e)}"
+        return "Erreur " + str(e)
 
 
-def generate_launch_post(platform: str, product_name: str, product_type: str, 
-                         scent: str, ingredients: str, benefits: str) -> str:
+def generate_launch_post(platform, product_name, product_type, scent, ingredients, benefits):
     return generate_post(
         post_type="lancement",
         platform=platform,
@@ -66,7 +60,7 @@ def generate_launch_post(platform: str, product_name: str, product_type: str,
     )
 
 
-def generate_citation_post(platform: str, theme: str) -> str:
+def generate_citation_post(platform, theme):
     return generate_post(
         post_type="citation",
         platform=platform,
@@ -74,7 +68,7 @@ def generate_citation_post(platform: str, theme: str) -> str:
     )
 
 
-def generate_educational_post(platform: str, topic: str) -> str:
+def generate_educational_post(platform, topic):
     return generate_post(
         post_type="educatif",
         platform=platform,
@@ -82,11 +76,10 @@ def generate_educational_post(platform: str, topic: str) -> str:
     )
 
 
-def generate_video_script(platform: str, video_type: str, subject: str) -> str:
+def generate_video_script(platform, video_type, subject):
     return generate_post(
         post_type="script_video",
         platform=platform,
         video_type=video_type,
         subject=subject
     )
-        post_
